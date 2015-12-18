@@ -33,6 +33,7 @@ requires (
     'IO::Socket::INET' => 0,
     'IO::Socket::SSL' => 0,
     'Moose' => 0,
+    'Time::Out' => 0,
     'namespace::autoclean' => 0,
 );
 

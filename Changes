@@ -1,5 +1,8 @@
 Revision history for MikroTik-API
 
+1.0 20151218
+		Added timeout, probe_before_talk
+
 0.01 20151210
         First version
 
