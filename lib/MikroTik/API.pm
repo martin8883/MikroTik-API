@@ -383,7 +383,7 @@ sub talk {
     while ( ( $retval, @reply ) = $self->_read_sentence() ) {
         my %dataset;
         foreach my $line ( @reply ) {
-            if ( my ($key, $value) = ( $line =~ /^=(\S+)=(.*)/s ) ) {
+            if ( my ($key, $value) = ( $line =~ /^=([^=]+)=(.*)/s ) ) {
                 $dataset{$key} = $value;
             }
         }
