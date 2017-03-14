@@ -1,5 +1,8 @@
 Revision history for MikroTik-API
 
+1.0.4 20170314
+        Bugfix: check for EOF, return retval=undef on EOF [by lavv17]
+
 1.0.3 20160211
         Bugfix: Made possible to query for values with '=' in it
 
