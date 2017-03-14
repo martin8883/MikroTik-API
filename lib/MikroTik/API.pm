@@ -378,9 +378,10 @@ sub talk {
 
     $self->_write_sentence( $sentence_aref );
     my ( @reply, @attrs );
-    my $retval = 0;
+    my $retval;
 
     while ( ( $retval, @reply ) = $self->_read_sentence() ) {
+	last if !defined $retval;
         my %dataset;
         foreach my $line ( @reply ) {
             if ( my ($key, $value) = ( $line =~ /^=([^=]+)=(.*)/s ) ) {
@@ -402,9 +403,10 @@ sub raw_talk {
 
     $self->_write_sentence( $sentence_aref );
     my ( @reply, @response );
-    my $retval = 0;
+    my $retval;
 
     while ( ( $retval, @reply ) = $self->_read_sentence() ) {
+	last if !defined $retval;
         foreach my $line ( @reply ) {
             push ( @response, $line );
         }
@@ -484,7 +486,7 @@ sub _read_sentence {
     my ( $self ) = @_;
 
     my ( @reply );
-    my $retval = 0;
+    my $retval;
 
     while ( my $word = $self->_read_word() ) {
         if ($word =~ /!done/) {
@@ -496,6 +498,9 @@ sub _read_sentence {
         elsif ($word =~ /!fatal/) {
             $retval = 3;
         }
+	else {
+	    $retval //= 0;
+	}
         push( @reply, $word );
         if ( $self->get_debug() > 2 ) {
             print "<<< $word\n"
@@ -508,7 +513,8 @@ sub _read_word {
     my ( $self ) = @_;
 
     my $ret_line = '';
-    my $len = $self->_read_len();
+    my $len = eval { $self->_read_len(); }; # catch EOF
+    return if !defined($len);
     if ( $len > 0 ) {
         if ( $self->get_debug() > 3 ) {
             print "recv $len\n";
@@ -522,9 +528,11 @@ sub _read_word {
             else { # IO::Socket::SSL does not implement recv()
                 $self->get_socket()->read( $line, $len );
             }
+	    last if !defined($line) || $line eq ''; # EOF
             $ret_line .= $line; # append to $ret_line, in case we didn't get the whole word and are going round again
             $length_received += length $line;
         }
+	return if length($ret_line) != $len; # EOF or a protocol error
     }
     return $ret_line;
 }
@@ -588,6 +596,7 @@ sub _read_byte{
     else { # IO::Socket::SSL does not implement recv()
         $self->get_socket()->read( $line, 1 );
     }
+    die 'EOF' if !defined($line) || length($line) != 1;
     return ord($line);
 }
 
