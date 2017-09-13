@@ -121,6 +121,9 @@ sub connect {
     if ( ! $self->get_socket() ) {
         die "socket creation failed ($!)";
     }
+    $self->get_socket()->sockopt(SO_KEEPALIVE,1);
+    $self->get_socket()->sockopt(SO_RCVTIMEO,$self->get_timeout());
+    $self->get_socket()->sockopt(SO_SNDTIMEO,$self->get_timeout());
     return $self;
 }
 
