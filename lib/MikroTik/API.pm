@@ -529,12 +529,7 @@ sub _read_word {
         my $length_received = 0;
         while ( $length_received < $len ) {
             my $line = '';
-            if ( ref $self->get_socket() eq 'IO::Socket::INET' ) {
-                $self->get_socket()->recv( $line, $len );
-            }
-            else { # IO::Socket::SSL does not implement recv()
-                $self->get_socket()->read( $line, $len );
-            }
+            $self->get_socket()->read( $line, $len );
 	    last if !defined($line) || $line eq ''; # EOF
             $ret_line .= $line; # append to $ret_line, in case we didn't get the whole word and are going round again
             $length_received += length $line;
@@ -597,12 +592,7 @@ sub _read_len {
 sub _read_byte{
     my ( $self ) = @_;
     my $line = '';
-    if ( ref $self->get_socket() eq 'IO::Socket::INET' ) {
-        $self->get_socket()->recv( $line, 1 );
-    }
-    else { # IO::Socket::SSL does not implement recv()
-        $self->get_socket()->read( $line, 1 );
-    }
+    $self->get_socket()->read( $line, 1 );
     die 'EOF' if !defined($line) || length($line) != 1;
     return ord($line);
 }
