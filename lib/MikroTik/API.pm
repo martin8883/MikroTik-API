@@ -162,6 +162,7 @@ sub login {
     push( @command, '=name=' . $self->get_username() );
     push( @command, '=response=00' . $md5->hexdigest() );
     ( $retval, @results ) = $self->talk( \@command );
+    die 'disconnected while logging in' if !defined $retval;
     if ( $retval > 1 ) {
         die $results[0]{'message'};
     }
@@ -199,6 +200,7 @@ sub cmd {
         push( @command, '='. $attr .'='. $attrs_href->{$attr} );
     }
     my ( $retval, @results ) = $self->talk( \@command );
+    die 'disconnected' if !defined $retval;
     if ($retval > 1) {
         die $results[0]{'message'};
     }
@@ -225,6 +227,7 @@ sub query {
         push( @command, '?'. $query .'='. $queries_href->{$query} );
     }
     my ( $retval, @results ) = $self->talk( \@command );
+    die 'disconnected' if !defined $retval;
     if ($retval > 1) {
         die $results[0]{'message'};
     }
@@ -244,6 +247,7 @@ sub get_by_key {
     my @command = ($cmd);
     my %ids;
     my ( $retval, @results ) = $self->talk( \@command );
+    die 'disconnected' if !defined $retval;
     if ($retval > 1) {
         die $results[0]{'message'};
     }
