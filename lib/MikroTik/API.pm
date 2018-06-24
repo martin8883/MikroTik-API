@@ -10,7 +10,7 @@ MikroTik::API - Client to MikroTik RouterOS API
 
 =head1 VERSION
 
-Version 1.0.4
+Version 1.0.5
 
 =cut
 
