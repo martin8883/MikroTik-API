@@ -69,7 +69,7 @@ sub BUILD {
     my ($self) = @_;
     if ( $self->get_autoconnect() && $self->get_host() ) {
         $self->connect();
-        if ($self->get_username() && ($self->get_password() || defined($self->get_password())) ) {
+        if ( $self->get_username() && defined( $self->get_password() ) ) {
             $self->login();
         }
     }
