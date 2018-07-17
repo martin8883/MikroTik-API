@@ -152,6 +152,9 @@ sub login {
 
     my @command = ('/login');
     my ( $retval, @results ) = $self->talk( \@command );
+    if ( $retval > 1 ) {
+        die 'error during establishing login: ' . $results[0]{'message'};
+    }
     my $challenge = pack("H*",$results[0]{'ret'});
     my $md5 = Digest::MD5->new();
     $md5->add( chr(0) );
