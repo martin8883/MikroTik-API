@@ -55,6 +55,7 @@ use Time::Out qw{ timeout };
         password => 'SECRET',
         autoconnect => 1, # optional (set to 0 if you do not want to connect during construction, default: 1)
         use_ssl => 1, # optional (0 for non ssl / 1 for ssl)
+        new_auth_method => 0, # optional starting at v6.43rc (transfers password in plaintext!)
         port => 8729, # optonal (needed if you use another port then 8728 for non-ssl or 8729 for ssl)
         debug => 0, # optional (set beween 0 (none) and 5 (most) for debug messages)
         timeout => 3, # optional (timeout after 3 seconds during connect)
@@ -151,23 +152,30 @@ sub login {
     }
 
     my @command = ('/login');
+    if ( $self->get_new_auth_method() ) {
+        push( @command, '=name=' . $self->get_username() );
+        push( @command, '=password=' . $self->get_password() );
+    }
     my ( $retval, @results ) = $self->talk( \@command );
+    die 'disconnected while logging in' if !defined $retval;
     if ( $retval > 1 ) {
         die 'error during establishing login: ' . $results[0]{'message'};
     }
-    my $challenge = pack("H*",$results[0]{'ret'});
-    my $md5 = Digest::MD5->new();
-    $md5->add( chr(0) );
-    $md5->add( $self->get_password() );
-    $md5->add( $challenge );
+    if ( ! $self->get_new_auth_method() ) {
+        my $challenge = pack("H*",$results[0]{'ret'});
+        my $md5 = Digest::MD5->new();
+        $md5->add( chr(0) );
+        $md5->add( $self->get_password() );
+        $md5->add( $challenge );
 
-    @command = ('/login');
-    push( @command, '=name=' . $self->get_username() );
-    push( @command, '=response=00' . $md5->hexdigest() );
-    ( $retval, @results ) = $self->talk( \@command );
-    die 'disconnected while logging in' if !defined $retval;
-    if ( $retval > 1 ) {
-        die $results[0]{'message'};
+        @command = ('/login');
+        push( @command, '=name=' . $self->get_username() );
+        push( @command, '=response=00' . $md5->hexdigest() );
+        ( $retval, @results ) = $self->talk( \@command );
+        die 'disconnected while logging in' if !defined $retval;
+        if ( $retval > 1 ) {
+            die 'error during establishing login: ' . $results[0]{'message'};
+        }
     }
     if ( $self->get_debug() > 0 ) {
         print 'Logged in to '. $self->get_host() .' as '. $self->get_username() ."\n";
@@ -301,6 +309,15 @@ has 'password' => ( is => 'rw', reader => 'get_password', writer => 'set_passwor
 
 has 'use_ssl' => ( is => 'rw', reader => 'get_use_ssl', writer => 'set_use_ssl', isa => 'Bool' );
 
+=head2 $api->get_new_auth_method(), $api->set_new_auth_method( $zero_or_one )
+
+Auth method changed in RouterOS v6.43+ (https://wiki.mikrotik.com/wiki/Manual:API#Initial_login) and reduces login by one call but sends password in plaintext.
+Currently (as of v6.43rc44) both logins methods are working. If you use SSL and want to save one call, you can set this flag to true (1).
+
+=cut
+
+has 'new_auth_method' => ( is => 'rw', reader => 'get_new_auth_method', writer => 'set_new_auth_method', isa => 'Bool', default => 0 );
+
 =head2 $api->get_autoconnect(), $api->set_autoconnect( $zero_or_one )
 
 =cut
@@ -391,7 +408,7 @@ sub talk {
     my $retval;
 
     while ( ( $retval, @reply ) = $self->_read_sentence() ) {
-	last if !defined $retval;
+        last if !defined $retval;
         my %dataset;
         foreach my $line ( @reply ) {
             if ( my ($key, $value) = ( $line =~ /^=([^=]+)=(.*)/s ) ) {
@@ -416,7 +433,7 @@ sub raw_talk {
     my $retval;
 
     while ( ( $retval, @reply ) = $self->_read_sentence() ) {
-	last if !defined $retval;
+        last if !defined $retval;
         foreach my $line ( @reply ) {
             push ( @response, $line );
         }
@@ -508,9 +525,9 @@ sub _read_sentence {
         elsif ($word =~ /!fatal/) {
             $retval = 3;
         }
-	else {
-	    $retval //= 0;
-	}
+        else {
+            $retval //= 0;
+        }
         push( @reply, $word );
         if ( $self->get_debug() > 2 ) {
             print "<<< $word\n"
@@ -533,11 +550,11 @@ sub _read_word {
         while ( $length_received < $len ) {
             my $line = '';
             $self->get_socket()->read( $line, $len );
-	    last if !defined($line) || $line eq ''; # EOF
+            last if !defined($line) || $line eq ''; # EOF
             $ret_line .= $line; # append to $ret_line, in case we didn't get the whole word and are going round again
             $length_received += length $line;
         }
-	return if length($ret_line) != $len; # EOF or a protocol error
+        return if length($ret_line) != $len; # EOF or a protocol error
     }
     return $ret_line;
 }
