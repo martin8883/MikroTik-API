@@ -10,11 +10,11 @@ MikroTik::API - Client to MikroTik RouterOS API
 
 =head1 VERSION
 
-Version 1.0.4
+Version 1.0.5
 
 =cut
 
-our $VERSION = '1.0.4';
+our $VERSION = '1.0.5';
 
 
 =head1 SYNOPSIS
@@ -650,9 +650,27 @@ Please report any bugs or feature requests to C<bug-mikrotik-api at rt.cpan.org>
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=MikroTik-API>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
+=head2 Known issues
+
+=over 4
+
+=item *
+
+Quite high compile time because of using Moose. Use of a persistent running framework recommended.
+
+= item *
+
+Login to RouterOS v6.43rc* not possible because of a changed auth method using plaintext passwords
+
+=back
+
 =head1 TODOS
 
 =over 4
+
+=item *
+
+Merge auth mathod patch for RouterOS v6.43rc* and later. Requires some more work to prevent accidentally sent plaintext passwords: https://github.com/martin8883/MikroTik-API/pull/4
 
 =item *
 
