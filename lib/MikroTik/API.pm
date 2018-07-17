@@ -642,7 +642,7 @@ Moose is more common than Moo or similar
 
 =head1 AUTHOR
 
-Martin Gojowsky, C<martin@gojowsky.de>
+Martin Gojowsky, C<martin at gojowsky.de>
 
 =head1 BUGS
 
