@@ -143,7 +143,7 @@ Connect happens on construction if you provide host address, username and passwo
 sub login {
     my ( $self ) = @_;
 
-    if ( ! $self->get_username() && $self->get_password() ) {
+    if ( ! $self->get_username() && defined( $self->get_password() ) ) {
         die 'username and password must be set before connect()';
     }
     if ( ! $self->get_socket() ) {
