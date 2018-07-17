@@ -10,11 +10,11 @@ MikroTik::API - Client to MikroTik RouterOS API
 
 =head1 VERSION
 
-Version 1.0.4
+Version 1.0.5
 
 =cut
 
-our $VERSION = '1.0.4';
+our $VERSION = '1.0.5';
 
 
 =head1 SYNOPSIS
@@ -150,26 +150,31 @@ sub login {
         $self->connect();
     }
 
+    # RouterOS post v6.43 has new authentication method, thus pushing login/pass in the very first request.
     my @command = ('/login');
-    my ( $retval, @results ) = $self->talk( \@command );
-    my $challenge = pack("H*",$results[0]{'ret'});
-    my $md5 = Digest::MD5->new();
-    $md5->add( chr(0) );
-    $md5->add( $self->get_password() );
-    $md5->add( $challenge );
-
-    @command = ('/login');
     push( @command, '=name=' . $self->get_username() );
-    push( @command, '=response=00' . $md5->hexdigest() );
-    ( $retval, @results ) = $self->talk( \@command );
-    die 'disconnected while logging in' if !defined $retval;
+    push( @command, '=password=' . $self->get_password() );
+    my ( $retval, @results ) = $self->talk( \@command );
+
+    # if we got "=ret=" in response - then assuming this is old style AUTH
+    if ( exists $results[0]{'ret'} ) {
+        my $challenge = pack("H*",$results[0]{'ret'});
+        my $md5 = Digest::MD5->new();
+        $md5->add( chr(0) );
+        $md5->add( $self->get_password() );
+        $md5->add( $challenge );
+
+        @command = ('/login');
+        push( @command, '=name=' . $self->get_username() );
+        push( @command, '=response=00' . $md5->hexdigest() );
+	( $retval, @results ) = $self->talk( \@command );
+    }
     if ( $retval > 1 ) {
         die $results[0]{'message'};
     }
     if ( $self->get_debug() > 0 ) {
         print 'Logged in to '. $self->get_host() .' as '. $self->get_username() ."\n";
     }
-
     return $self;
 }
 
