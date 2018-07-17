@@ -610,11 +610,11 @@ Object-Orientated Rebuild of prior contributions, based on:
 
 =item *
 
-inital release from cheesegrits in MikroTik forum: http://forum.mikrotik.com/viewtopic.php?p=108530#p108530
+initial release from cheesegrits in MikroTik forum: http://forum.mikrotik.com/viewtopic.php?p=108530#p108530
 
 =item *
 
-added timeoutparameter and fixes by elcamlost: https://github.com/elcamlost/mikrotik-perl-api/commit/10e5da1fd0ccb4a249ed3047c1d22c97251f666e
+added C<timeout parameter> and fixes by elcamlost: https://github.com/elcamlost/mikrotik-perl-api/commit/10e5da1fd0ccb4a249ed3047c1d22c97251f666e
 
 =item *
 
@@ -642,7 +642,7 @@ Moose is more common than Moo or similar
 
 =head1 AUTHOR
 
-Martin Gojowsky, C<< <martin at gojowsky.de> >>
+Martin Gojowsky, C<martin@gojowsky.de>
 
 =head1 BUGS
 
@@ -658,19 +658,19 @@ automatically be notified of progress on your bug as I make changes.
 
 Quite high compile time because of using Moose. Use of a persistent running framework recommended.
 
-= item *
+=item *
 
 Login to RouterOS v6.43rc* not possible because of a changed auth method using plaintext passwords
 
 =back
 
-=head1 TODOS
+=head1 TODO
 
 =over 4
 
 =item *
 
-Merge auth mathod patch for RouterOS v6.43rc* and later. Requires some more work to prevent accidentally sent plaintext passwords: https://github.com/martin8883/MikroTik-API/pull/4
+Merge auth method patch for RouterOS v6.43rc* and later. Requires some more work to prevent accidentally sent plaintext passwords: https://github.com/martin8883/MikroTik-API/pull/4
 
 =item *
 
@@ -683,7 +683,6 @@ Add a parameter talk_timeout as an alternative for probe_before_talk that enable
 You can find documentation for this module with the perldoc command.
 
     perldoc MikroTik::API
-
 
 You can also look for information at:
 
