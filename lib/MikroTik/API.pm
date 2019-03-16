@@ -198,8 +198,25 @@ sub logout {
 
 =head2 $api->cmd( $command, \%attributes )
 
+    # Set with no key required
+    # /system identity set name=MyNewMikroTik
     my $returnvalue = $api->cmd( '/system/identity/set', { 'name' => 'MyNewMikroTik' } );
     print "Name set\n" if ($returnvalue < 2);
+
+    # Set keyed on the name "local"
+    # /interface bridge set local fast-forward=no
+    my $returnvalue = $api->cmd( '/interface/bridge/set', { '.id' => 'local', 'fast-forward' => 'no' } );
+    print "Bridge fast-forward turned off\n" if ($returnvalue < 2);
+
+    # Set keyed on internal key
+    # /interface bridge set *cc fast-forward=no
+    my $returnvalue = $api->cmd( '/interface/bridge/set', { '.id' => '*cc', 'fast-forward' => 'no' } );
+    print "Bridge fast-forward turned off\n" if ($returnvalue < 2);
+
+    # Reset a value
+    # /routing bgp peer set testpeer !keepalive-time
+    my $returnvalue = $api->cmd( '/routing/bgp/peer/set', { '.id' => 'testpeer', 'keepalive-time' => undef } );
+    print "Reset keepalive-time on testpeer\n" if ($returnvalue < 2);
 
 =cut
 
@@ -208,7 +225,11 @@ sub cmd {
     my @command = ($cmd);
 
     foreach my $attr ( keys %{$attrs_href} ) {
-        push( @command, '='. $attr .'='. $attrs_href->{$attr} );
+	if (defined($attrs_href->{$attr})) {
+        	push( @command, '='. $attr .'='. $attrs_href->{$attr} );
+	} else {
+        	push( @command, '=!'. $attr );
+	}
     }
     my ( $retval, @results ) = $self->talk( \@command );
     die 'disconnected' if !defined $retval;
