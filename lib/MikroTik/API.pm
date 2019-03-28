@@ -241,22 +241,53 @@ sub cmd {
 
 =head2 $api->query( $command, \%attributes, \%conditions )
 
+    # Get all interfaces of type ether
     my ( $ret_interface_print, @interfaces ) = $api->query('/interface/print', { '.proplist' => '.id,name' }, { type => 'ether' } );
     foreach my $interface ( @interfaces ) {
         print "$interface->{name}\n";
     }
 
+    # get all default routes that don't have the dynamic attribute
+    my ( $ret_route_print, @routes ) = $api->query('/ip/route', { '.proplist' => '.id,dst-address' }, { 'dst-address' => '0.0.0.0/0', 'dynamic'=>undef } );
+    foreach my $route ( @routes ) {
+        print "$route->{'dst-address'}\n";
+    }
+
+    # get all default routes that don't have the dynamic attribute (alternate using array ref)
+    my ( $ret_route_print, @routes ) = $api->query('/ip/route', { '.proplist' => '.id,dst-address' }, [ 'dst-address=0.0.0.0/0', '-dynamic' ] );
+    foreach my $route ( @routes ) {
+        print "$route->{'dst-address'}\n";
+    }
+
+    # get all default routes along with those with the dynamic attribute (note 'or' operator as last arg)
+    my ( $ret_route_print, @routes ) = $api->query('/ip/route', { '.proplist' => '.id,dst-address' }, [ 'dst-address=0.0.0.0/0', 'dynamic', '#|' ] );
+    foreach my $route ( @routes ) {
+        print "$route->{'dst-address'}\n";
+    }
+
 =cut
 
 sub query {
-    my ( $self, $cmd, $attrs_href, $queries_href ) = @_;
+    my ( $self, $cmd, $attrs_href, $queries_ref ) = @_;
 
     my @command = ($cmd);
     foreach my $attr ( keys %{$attrs_href} ) {
-        push( @command, '='. $attr .'='. $attrs_href->{$attr} );
+        push( @command, '='. $attr .'='. (defined($attrs_href->{$attr}) ? $attrs_href->{$attr} : ''));
     }
-    foreach my $query (keys %{$queries_href} ) {
-        push( @command, '?'. $query .'='. $queries_href->{$query} );
+    if (defined($queries_ref)) {
+        if (ref($queries_ref) eq 'HASH') {
+            foreach my $query (keys %{$queries_ref} ) {
+                if (defined($queries_ref->{$query})) {
+                    push( @command, '?'. $query .'='. $queries_ref->{$query} );
+                } else {
+                    push( @command, '?-'. $query);
+                }
+            }
+        } elsif (ref($queries_ref) eq 'ARRAY') {
+            foreach my $query (@{$queries_ref} ) {
+                push( @command, '?'. $query);
+            }
+        }
     }
     my ( $retval, @results ) = $self->talk( \@command );
     die 'disconnected' if !defined $retval;
