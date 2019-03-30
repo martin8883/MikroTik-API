@@ -232,10 +232,6 @@ sub cmd {
 	}
     }
     my ( $retval, @results ) = $self->talk( \@command );
-    die 'disconnected' if !defined $retval;
-    if ($retval > 1) {
-        die $results[0]{'message'};
-    }
     return ( $retval, @results );
 }
 
@@ -290,10 +286,6 @@ sub query {
         }
     }
     my ( $retval, @results ) = $self->talk( \@command );
-    die 'disconnected' if !defined $retval;
-    if ($retval > 1) {
-        die $results[0]{'message'};
-    }
     return ( $retval, @results );
 }
 
@@ -434,6 +426,10 @@ can be useful for advanced users, but too complex for daily use
 
 =cut
 
+# Send a sentence (command) and then read sentences back until we
+# get a '!done' sentence
+# returns 1 on success or 2 on trap, 3 on fatal
+#       along with an array of hashref for the results
 sub talk {
     my ( $self, $sentence_aref ) = @_;
 
@@ -450,7 +446,7 @@ sub talk {
                 $self->login();
             }
             else {
-                die 'could not talk to MikroTik';
+                return( 3, {message => 'could not talk to MikroTik'});
             }
         }
     }
@@ -459,16 +455,31 @@ sub talk {
     my ( @reply, @attrs );
     my $retval;
 
-    while ( ( $retval, @reply ) = $self->_read_sentence() ) {
-        last if !defined $retval;
+    # Keep reading sentences until we get one that begins with '!done'
+    # Put each sentence into a hashref
+    while ( @reply = $self->_read_sentence()) {
+        if ($reply[0] eq '!done') {
+            $retval //= 1; # Set this if it has not already been set
+        } elsif ($reply[0] eq '!re') {
+            $retval = 1;
+        } elsif ($reply[0] eq '!trap') {
+            $retval = 2;
+        } elsif ($reply[0] eq '!fatal') {
+            $retval = 3;
+        }
         my %dataset;
         foreach my $line ( @reply ) {
+            # Only consider words of the form "=var=value"
             if ( my ($key, $value) = ( $line =~ /^=([^=]+)=(.*)/s ) ) {
                 $dataset{$key} = $value;
             }
         }
         push( @attrs, \%dataset ) if (keys %dataset);
-        if ( $retval > 0 ) { last; }
+        last if ($reply[0] eq '!done');
+    }
+    if (!@reply) {
+        # network error
+	return( 3, {message => 'disconnected'});
     }
     return ( $retval, @attrs );
 }
@@ -484,12 +495,20 @@ sub raw_talk {
     my ( @reply, @response );
     my $retval;
 
-    while ( ( $retval, @reply ) = $self->_read_sentence() ) {
-        last if !defined $retval;
+    while ( @reply = $self->_read_sentence() ) {
+        if ($reply[0] eq '!done') {
+            $retval //= 0;
+        } elsif ($reply[0] eq '!re') {
+            $retval = 1;
+        } elsif ($reply[0] eq '!trap') {
+            $retval = 2;
+        } elsif ($reply[0] eq '!fatal') {
+            $retval = 3;
+        }
         foreach my $line ( @reply ) {
             push ( @response, $line );
         }
-        if ( $retval > 0 ) { last; }
+        last if ($reply[0] eq '!done');
     }
     return ( $retval, @response );
 }
@@ -561,33 +580,30 @@ sub _write_len {
     }
 }
 
+# Read words until we get a word with zero length. All sentences
+# begin with a word that begins with '!'
+# Returns an array of words
 sub _read_sentence {
     my ( $self ) = @_;
 
     my ( @reply );
-    my $retval;
 
-    while ( my $word = $self->_read_word() ) {
-        if ($word =~ /!done/) {
-            $retval = 1;
-        }
-        elsif ($word =~ /!trap/) {
-            $retval = 2;
-        }
-        elsif ($word =~ /!fatal/) {
-            $retval = 3;
-        }
-        else {
-            $retval //= 0;
-        }
+    my $word = $self->_read_word();
+    return if (!$word);
+
+    die "Protocol error (sentence word does being with \"!\"\n" if ($word !~ /^!/);
+
+    do {
         push( @reply, $word );
         if ( $self->get_debug() > 2 ) {
             print "<<< $word\n"
         }
-    }
-    return ( $retval, @reply );
+    } while ( $word = $self->_read_word() );
+    return (@reply );
 }
 
+# Read a word from the Mikrotik
+# Return the word read (maybe zero length string), or undef on EOF or error
 sub _read_word {
     my ( $self ) = @_;
 
@@ -611,6 +627,7 @@ sub _read_word {
     return $ret_line;
 }
 
+# Read the length of the next word
 sub _read_len {
     my ( $self ) = @_;
 
@@ -621,6 +638,9 @@ sub _read_len {
     my $len = $self->_read_byte();
 
     if ( ($len & 0x80) == 0x00 ) {
+        if ( $self->get_debug() > 4 ) {
+            print "read_len got $len\n";
+        }
         return $len
     }
     elsif ( ($len & 0xC0) == 0x80 ) {
