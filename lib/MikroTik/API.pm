@@ -105,6 +105,7 @@ sub connect {
                 PeerPort => $self->get_port(),
                 Proto => 'tcp',
                 SSL_cipher_list => 'HIGH',
+                SSL_verify_mode => $self->get_ssl_verify(),
                 Timeout => $self->get_timeout(),
             ) or die "failed connect or ssl handshake ($!: ". IO::Socket::SSL::errstr() .')'
         );
@@ -351,7 +352,8 @@ has 'password' => ( is => 'rw', reader => 'get_password', writer => 'set_passwor
 
 =cut
 
-has 'use_ssl' => ( is => 'rw', reader => 'get_use_ssl', writer => 'set_use_ssl', isa => 'Bool' );
+has 'use_ssl'    => ( is => 'rw', reader => 'get_use_ssl', writer => 'set_use_ssl', isa => 'Bool' );
+has 'ssl_verify' => ( is => 'rw', reader => 'get_ssl_verify', writer => 'set_ssl_verify', isa => 'Int', default => 1 );
 
 =head2 $api->get_new_auth_method(), $api->set_new_auth_method( $zero_or_one )
 
