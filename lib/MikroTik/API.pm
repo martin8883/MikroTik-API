@@ -55,7 +55,6 @@ use Time::Out qw{ timeout };
         password => 'SECRET',
         autoconnect => 1, # optional (set to 0 if you do not want to connect during construction, default: 1)
         use_ssl => 1, # optional (0 for non ssl / 1 for ssl)
-        new_auth_method => 0, # optional starting at v6.43rc (transfers password in plaintext!)
         port => 8729, # optonal (needed if you use another port then 8728 for non-ssl or 8729 for ssl)
         debug => 0, # optional (set beween 0 (none) and 5 (most) for debug messages)
         timeout => 3, # optional (timeout after 3 seconds during connect)
@@ -174,7 +173,7 @@ sub login {
         push( @command, '=name=' . $self->get_username() );
         push( @command, '=response=00' . $md5->hexdigest() );
         ( $retval, @results ) = $self->talk( \@command );
-	}
+    }
     die 'disconnected while logging in' if !defined $retval;
     if ( $retval > 1 ) {
             die 'error during establishing login: ' . $results[0]{'message'};
@@ -227,11 +226,11 @@ sub cmd {
     my @command = ($cmd);
 
     foreach my $attr ( keys %{$attrs_href} ) {
-	if (defined($attrs_href->{$attr})) {
-        	push( @command, '='. $attr .'='. $attrs_href->{$attr} );
-	} else {
-        	push( @command, '=!'. $attr );
-	}
+        if (defined($attrs_href->{$attr})) {
+            push( @command, '='. $attr .'='. $attrs_href->{$attr} );
+        } else {
+            push( @command, '=!'. $attr );
+        }
     }
     my ( $retval, @results ) = $self->talk( \@command );
     return ( $retval, @results );
@@ -487,7 +486,7 @@ sub talk {
     }
     if (!@reply) {
         # network error
-	return( 3, {message => 'disconnected'});
+        return( 3, {message => 'disconnected'});
     }
     return ( $retval, @attrs );
 }
@@ -764,10 +763,6 @@ Login to RouterOS v6.43rc* not possible because of a changed auth method using p
 =head1 TODO
 
 =over 4
-
-=item *
-
-Merge auth method patch for RouterOS v6.43rc* and later. Requires some more work to prevent accidentally sent plaintext passwords: https://github.com/martin8883/MikroTik-API/pull/4
 
 =item *
 
