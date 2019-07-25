@@ -150,29 +150,31 @@ sub login {
         $self->connect();
     }
 
+    # RouterOS post v6.43 has new authentication method, thus pushing login/pass in the very first request.
     my @command = ('/login');
-    my ( $retval, @results ) = $self->talk( \@command );
-    if ( $retval > 1 ) {
-        die 'error during establishing login: ' . $results[0]{'message'};
-    }
-    my $challenge = pack("H*",$results[0]{'ret'});
-    my $md5 = Digest::MD5->new();
-    $md5->add( chr(0) );
-    $md5->add( $self->get_password() );
-    $md5->add( $challenge );
-
-    @command = ('/login');
     push( @command, '=name=' . $self->get_username() );
-    push( @command, '=response=00' . $md5->hexdigest() );
-    ( $retval, @results ) = $self->talk( \@command );
-    die 'disconnected while logging in' if !defined $retval;
+    push( @command, '=password=' . $self->get_password() );
+    my ( $retval, @results ) = $self->talk( \@command );
+
+    # if we got "=ret=" in response - then assuming this is old style AUTH
+    if ( exists $results[0]{'ret'} ) {
+        my $challenge = pack("H*",$results[0]{'ret'});
+        my $md5 = Digest::MD5->new();
+        $md5->add( chr(0) );
+        $md5->add( $self->get_password() );
+        $md5->add( $challenge );
+
+        @command = ('/login');
+        push( @command, '=name=' . $self->get_username() );
+        push( @command, '=response=00' . $md5->hexdigest() );
+        ( $retval, @results ) = $self->talk( \@command );
+    }
     if ( $retval > 1 ) {
         die $results[0]{'message'};
     }
     if ( $self->get_debug() > 0 ) {
         print 'Logged in to '. $self->get_host() .' as '. $self->get_username() ."\n";
     }
-
     return $self;
 }
 
@@ -391,7 +393,7 @@ sub talk {
     my $retval;
 
     while ( ( $retval, @reply ) = $self->_read_sentence() ) {
-	last if !defined $retval;
+        last if !defined $retval;
         my %dataset;
         foreach my $line ( @reply ) {
             if ( my ($key, $value) = ( $line =~ /^=([^=]+)=(.*)/s ) ) {
@@ -416,7 +418,7 @@ sub raw_talk {
     my $retval;
 
     while ( ( $retval, @reply ) = $self->_read_sentence() ) {
-	last if !defined $retval;
+        last if !defined $retval;
         foreach my $line ( @reply ) {
             push ( @response, $line );
         }
@@ -508,9 +510,9 @@ sub _read_sentence {
         elsif ($word =~ /!fatal/) {
             $retval = 3;
         }
-	else {
-	    $retval //= 0;
-	}
+        else {
+            $retval //= 0;
+        }
         push( @reply, $word );
         if ( $self->get_debug() > 2 ) {
             print "<<< $word\n"
@@ -533,11 +535,11 @@ sub _read_word {
         while ( $length_received < $len ) {
             my $line = '';
             $self->get_socket()->read( $line, $len );
-	    last if !defined($line) || $line eq ''; # EOF
+            last if !defined($line) || $line eq ''; # EOF
             $ret_line .= $line; # append to $ret_line, in case we didn't get the whole word and are going round again
             $length_received += length $line;
         }
-	return if length($ret_line) != $len; # EOF or a protocol error
+        return if length($ret_line) != $len; # EOF or a protocol error
     }
     return $ret_line;
 }
