@@ -152,17 +152,18 @@ sub login {
         $self->connect();
     }
 
+    # RouterOS post v6.43 has new authentication method, thus pushing login/pass in the very first request.
     my @command = ('/login');
-    if ( $self->get_new_auth_method() ) {
-        push( @command, '=name=' . $self->get_username() );
-        push( @command, '=password=' . $self->get_password() );
-    }
+    push( @command, '=name=' . $self->get_username() );
+    push( @command, '=password=' . $self->get_password() );
     my ( $retval, @results ) = $self->talk( \@command );
     die 'disconnected while logging in' if !defined $retval;
     if ( $retval > 1 ) {
         die 'error during establishing login: ' . $results[0]{'message'};
     }
-    if ( ! $self->get_new_auth_method() ) {
+
+    # if we got "=ret=" in response - then assuming this is old style AUTH
+    if ( exists $results[0]{'ret'} ) {
         my $challenge = pack("H*",$results[0]{'ret'});
         my $md5 = Digest::MD5->new();
         $md5->add( chr(0) );
@@ -173,15 +174,15 @@ sub login {
         push( @command, '=name=' . $self->get_username() );
         push( @command, '=response=00' . $md5->hexdigest() );
         ( $retval, @results ) = $self->talk( \@command );
-        die 'disconnected while logging in' if !defined $retval;
-        if ( $retval > 1 ) {
+	}
+    die 'disconnected while logging in' if !defined $retval;
+    if ( $retval > 1 ) {
             die 'error during establishing login: ' . $results[0]{'message'};
-        }
     }
+
     if ( $self->get_debug() > 0 ) {
         print 'Logged in to '. $self->get_host() .' as '. $self->get_username() ."\n";
     }
-
     return $self;
 }
 
@@ -357,8 +358,8 @@ has 'ssl_verify' => ( is => 'rw', reader => 'get_ssl_verify', writer => 'set_ssl
 
 =head2 $api->get_new_auth_method(), $api->set_new_auth_method( $zero_or_one )
 
+DEPRECATED: does not have any effect any longer. Login looks up wether new method is possible and falls back to old method. This parameter will be removed in future.
 Auth method changed in RouterOS v6.43+ (https://wiki.mikrotik.com/wiki/Manual:API#Initial_login) and reduces login by one call but sends password in plaintext.
-Currently (as of v6.43rc44) both logins methods are working. If you use SSL and want to save one call, you can set this flag to true (1).
 
 =cut
 
@@ -469,7 +470,7 @@ sub talk {
         } elsif ($reply[0] eq '!fatal') {
             $retval = 3;
         }
-        my %dataset;
+       my %dataset;
         foreach my $line ( @reply ) {
             # Only consider words of the form "=var=value"
             if ( my ($key, $value) = ( $line =~ /^=([^=]+)=(.*)/s ) ) {
