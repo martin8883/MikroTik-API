@@ -354,6 +354,11 @@ has 'password' => ( is => 'rw', reader => 'get_password', writer => 'set_passwor
 =cut
 
 has 'use_ssl'    => ( is => 'rw', reader => 'get_use_ssl', writer => 'set_use_ssl', isa => 'Bool' );
+
+=head2 $api->get_ssl_verify(), $api->set_ssl_verify( $zero_or_one )
+
+=cut
+
 has 'ssl_verify' => ( is => 'rw', reader => 'get_ssl_verify', writer => 'set_ssl_verify', isa => 'Int', default => 1 );
 
 =head2 $api->get_new_auth_method(), $api->set_new_auth_method( $zero_or_one )
