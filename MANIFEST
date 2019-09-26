@@ -4,7 +4,7 @@ eg/get_identity.pl
 eg/set_ethernet_name.pl
 eg/set_identity.pl
 lib/MikroTik/API.pm
-lib/MikroTik/API/Examples.pm
+lib/MikroTik/API/Examples.pod
 Makefile.PL
 MANIFEST			This list of files
 META.yml
