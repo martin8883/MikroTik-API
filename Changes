@@ -1,5 +1,10 @@
 Revision history for MikroTik-API
 
+2.0.1 20190926
+    -fixed wrong dependecies in Makefile
+    - added internal SO_* to also_private for POD-coverage test
+    - renamed internal sub
+
 2.0.0 20190926
     - use Moo instead of Moose
     - replaced die with croak

@@ -10,13 +10,13 @@ MikroTik::API - Client to MikroTik RouterOS API
 
 =head1 VERSION
 
-Version 2.0.0
+Version 2.0.1
 
 B<CAUTION:> Dependencies change with version 2.0.0. MikroTik::API now relies on Moo instead of Moose. Please be sure, dependencies are met before upgrading.
 
 =cut
 
-our $VERSION = '2.0.0';
+our $VERSION = '2.0.1';
 
 
 =head1 SYNOPSIS
@@ -39,17 +39,17 @@ our $VERSION = '2.0.0';
 
 =cut
 
-use Moo;
-use MooX::Types::MooseLike::Base qw(Bool CodeRef Int Str);
 use Carp qw(croak);
-use Type::Tiny;
-use Try::Tiny;
-use namespace::autoclean;
-
 use Digest::MD5;
 use IO::Socket::IP;
 use IO::Socket::SSL;
+use Moo;
+use MooX::Types::MooseLike::Base qw(Bool CodeRef Int Str);
 use Time::Out qw{ timeout };
+use Try::Tiny;
+use Type::Tiny;
+use namespace::autoclean;
+
 
 =head1 PUBLIC METHODS
 
@@ -415,14 +415,14 @@ If you need to use an existing socket for the API connection.
 
 =cut
 
-sub MaybeIOSocket {
+sub _MaybeIOSocket {
     return Type::Tiny->new(
-        name       => 'MaybeIOSocket',
+        name       => '_MaybeIOSocket',
         constraint => sub { defined $_ ? $_->isa('IO::Socket') : 1 },
         message    => sub { "$_ ain't an IO::Socket or undef" },
     );
 }
-has 'socket' => ( is => 'rw', reader => 'get_socket', writer => 'set_socket', isa => MaybeIOSocket );
+has 'socket' => ( is => 'rw', reader => 'get_socket', writer => 'set_socket', isa => _MaybeIOSocket );
 
 =head2 $api->get_debug(), $api->set_debug( $int )
 
